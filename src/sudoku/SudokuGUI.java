@@ -56,7 +56,7 @@ public class SudokuGUI extends JFrame {
 		JPanel panelNorth = newNorthPanel();
 		contentPane.add(panelNorth, BorderLayout.NORTH);
 
-		JPanel panelSouth = newSouthPanel(); 
+		JPanel panelSouth = newSouthPanel();
 		contentPane.add(panelSouth, BorderLayout.SOUTH);
 
 		JPanel panelCenter = newCenterPanel();
@@ -64,6 +64,10 @@ public class SudokuGUI extends JFrame {
 
 	}
 
+	/**
+	 * 
+	 * @return
+	 */
 	public JPanel newNorthPanel() {
 		JPanel panelNorth = new JPanel();
 		// create North panel and add a header label
@@ -72,6 +76,10 @@ public class SudokuGUI extends JFrame {
 		return panelNorth;
 	}
 
+	/**
+	 * 
+	 * @return
+	 */
 	public JPanel newSouthPanel() {
 		JPanel panelSouth = new JPanel();
 		// create South panel and add a space for where buttons will eventually go
@@ -80,40 +88,51 @@ public class SudokuGUI extends JFrame {
 		return panelSouth;
 	}
 
+	/**
+	 * 
+	 * @return
+	 */
 	public JPanel newCenterPanel() {
 		JPanel panelCenter = new JPanel();
 		panelCenter.setLayout(new GridLayout(3, 3, 10, 10));
 		createBlocks();
-		int blockIndex = 0;
-		int rowlimit, collimit;
-		rowlimit = collimit = 3;
-		while (blockIndex < 9) {
-			for (int row = rowlimit - 3; row < rowlimit; ++row) {
-				for (int col = collimit - 3; col < collimit; ++col) {
-					Cell newcell = new Cell(row, col, blockIndex);
-					int value = rand.nextInt(1, 10);
-					newcell.setText(blockIndex + "");
-					newcell.updateValue(value);
-					cells[row][col] = newcell;
-					blocks[blockIndex].addCell(newcell);
-				}
-			}
-			if (blockIndex == 2 || blockIndex == 5) {
-				rowlimit += 3;
-				collimit = 3;
-			}
-			else {
-				collimit += 3;
-			}
-			++blockIndex;
-			
-		}
-		addCellsToPanel(panelCenter);
+		createCells();
+		addBlocksToPanel(panelCenter);
+		assignCellValues();
 		return panelCenter;
 	}
 
-	// creates a 1-D array of CellBlocks, using 'i' to iterate through the array and
-	// 'l' to iterate through the blockIDs that are assigned.
+	/**
+	 * Creates Cells for each CellBlock, in order from left to right.
+	 */
+	private void createCells() {
+		int blockIndex = 0;
+		int rowLimit, colLimit;
+		rowLimit = colLimit = 3;
+		while (blockIndex < 9) {
+			for (int row = rowLimit - 3; row < rowLimit; ++row) {
+				for (int col = colLimit - 3; col < colLimit; ++col) {
+					Cell newCell = new Cell(row, col, blockIndex);
+					// Currently only shows the Block index for testing purposes, will need to be
+					// changed
+					newCell.setText(blockIndex + "");
+					cells[row][col] = newCell;
+					blocks[blockIndex].addCell(newCell);
+				}
+			}
+			if (blockIndex == 2 || blockIndex == 5) {
+				rowLimit += 3;
+				colLimit = 3;
+			} else {
+				colLimit += 3;
+			}
+			++blockIndex;
+		}
+	}
+
+	/**
+	 * Creates a 1-D array of CellBlocks.
+	 */
 	private void createBlocks() {
 		for (int i = 0; i < 9; ++i) {
 			CellBlock block = new CellBlock(i);
@@ -121,34 +140,74 @@ public class SudokuGUI extends JFrame {
 		}
 	}
 
-	// Takes in an individual Cell and returns its parent CellBlock.
+	/**
+	 * Assigns a random int (1-9) to a Cell. If that int is already present within
+	 * the Cell's row, column or CellBlock, then a new int will be assigned until it
+	 * finds one that hasn't already been used.
+	 * 
+	 * @param cell the Cell receiving a value
+	 * @return the unique, random int
+	 */
+	private int findUnusedValue(Cell cell) {
+		int value;
+		int cellRow = cell.getRow();
+		int cellCol = cell.getColumn();
+		do {
+			value = rand.nextInt(1, 10);
+		}
+		while (!(checkCellRow(cellRow, value) || checkCellCol(cellCol, value)
+				|| checkCellBlock(value, getParentBlock(cell))));
+		return value;
+	}
+
+	private boolean checkCellRow(int row, int value) {
+		for (int i = 0; i < 9; ++i) {
+			if (cells[row][i].getValue() == value)
+				return false;
+		}
+		return true;
+	}
+
+	private boolean checkCellCol(int col, int value) {
+		for (int i = 0; i < 9; ++i) {
+			if (cells[i][col].getValue() == value)
+				return false;
+		}
+		return true;
+	}
+
+	private boolean checkCellBlock(int value, CellBlock block) {
+		return block.checkBlock(value);
+	}
+
+	private void addBlocksToPanel(JPanel panelCenter) {
+		for (CellBlock block : blocks) {
+			panelCenter.add(block);
+		}
+	}
+
+	/**
+	 * Takes in an individual Cell and returns its parent CellBlock.
+	 * 
+	 * @param cell the Cell to be analyzed
+	 * @return the CellBlock that the Cell belongs to
+	 */
 	private CellBlock getParentBlock(Cell cell) {
-		char blockID = cell.getID();
+		int blockID = cell.getBlockID();
 
 		for (CellBlock block : blocks) {
 			if (block.getBlockID() == blockID) {
 				return block;
 			}
 		}
+		return null;
 	}
 
-	private int assignValue(Cell cell) {
-		// will choose a random int and verify that it's not already present in the
-		// Cell's row, col, or block [use getParentBlock()]. If so, it will choose a new
-		// int and retry. Once a unique int is found it will be assigned to the Cell's
-		// value.
-		return 0;
-	}
-
-	private void addCellsToPanel(JPanel panelCenter) {
-	/* 	for (Cell[] row : cells) {
-			for (Cell cell : row) {
-				panelCenter.add(cell);
+	private void assignCellValues() {
+		for (Cell[] cellRow : cells) {
+			for (Cell cell : cellRow) {
+				cell.updateValue(findUnusedValue(cell));
 			}
-			
-		}
-*/		for (CellBlock block : blocks) {
-			panelCenter.add(block);	
 		}
 	}
 

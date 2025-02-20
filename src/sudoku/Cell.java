@@ -19,10 +19,19 @@ public class Cell extends JLabel{
         setHorizontalAlignment(SwingConstants.CENTER);
     }
 
+    /**
+     * 
+     * @param value
+     */
     public void updateValue(int value) {
         this.value = value;
+        setText(value + "");
     }
 
+    /**
+     * 
+     * @return
+     */
     public int getBlockID() {
 		return blockID;
 	}
@@ -33,5 +42,9 @@ public class Cell extends JLabel{
 
     public int getColumn() {
         return col;
+    }
+
+    public int getValue() {
+        return value;
     }
 }
